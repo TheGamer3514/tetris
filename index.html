@@ -36,19 +36,17 @@
       <p><canvas id="upcoming"></canvas></p>
       <p>score: <span id="score">00000</span></p>
       <p>rows: <span id="rows">0</span></p>
-      <p>Press Space To Drop Faster <span id="rows"></span></p>
+      <p>Press Space Bar To Drop Faster <span id="rows"></span></p>
+      <p><a href="https://discord.gg/sillydev">Join our Discord server</a><p>
     </div>
     <canvas id="canvas">
-      Sorry, this example cannot be run because your browser does not support the &lt;canvas&gt; element
+      Sorry, this example cannot be run because your browser does not support the &lt;canvas&gt; element 😭
+      For more information join our <a href="https://discord.gg/sillydev">Discord server</a>
     </canvas>
   </div>
 
   <script src="stats.js"></script>
   <script>
-    //-------------------------------------------------------------------------
-    // base helper methods
-    //-------------------------------------------------------------------------
-
     function get(id)        { return document.getElementById(id);  }
     function hide(id)       { get(id).style.visibility = 'hidden'; }
     function show(id)       { get(id).style.visibility = null;     }
@@ -58,7 +56,7 @@
     function random(min, max)      { return (min + (Math.random() * (max - min)));            }
     function randomChoice(choices) { return choices[Math.round(random(0, choices.length-1))]; }
 
-    if (!window.requestAnimationFrame) { // http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+    if (!window.requestAnimationFrame) {
       window.requestAnimationFrame = window.webkitRequestAnimationFrame ||
                                      window.mozRequestAnimationFrame    ||
                                      window.oRequestAnimationFrame      ||
@@ -67,11 +65,6 @@
                                        window.setTimeout(callback, 1000 / 60);
                                      }
     }
-
-    //-------------------------------------------------------------------------
-    // game constants
-    //-------------------------------------------------------------------------
-
     var KEY     = { ESC: 13, SPACE: 13, LEFT: 37, UP: 38, RIGHT: 39, DOWN: 32, },
         DIR     = { UP: 0, RIGHT: 1, DOWN: 2, LEFT: 3, MIN: 0, MAX: 3 },
         stats   = new Stats(),
@@ -79,43 +72,21 @@
         ctx     = canvas.getContext('2d'),
         ucanvas = get('upcoming'),
         uctx    = ucanvas.getContext('2d'),
-        speed   = { start: 0.6, decrement: 0.005, min: 0.1 }, // how long before piece drops by 1 row (seconds)
-        nx      = 10, // width of tetris court (in blocks)
-        ny      = 20, // height of tetris court (in blocks)
-        nu      = 5;  // width/height of upcoming preview (in blocks)
-
-    //-------------------------------------------------------------------------
-    // game variables (initialized during reset)
-    //-------------------------------------------------------------------------
-
-    var dx, dy,        // pixel size of a single tetris block
-        blocks,        // 2 dimensional array (nx*ny) representing tetris court - either empty block or occupied by a 'piece'
-        actions,       // queue of user actions (inputs)
-        playing,       // true|false - game is in progress
-        dt,            // time since starting this game
-        current,       // the current piece
-        next,          // the next piece
-        score,         // the current score
-        vscore,        // the currently displayed score (it catches up to score in small chunks - like a spinning slot machine)
-        rows,          // number of completed rows in the current game
-        step;          // how long before current piece drops by 1 row
-
-    //-------------------------------------------------------------------------
-    // tetris pieces
-    //
-    // blocks: each element represents a rotation of the piece (0, 90, 180, 270)
-    //         each element is a 16 bit integer where the 16 bits represent
-    //         a 4x4 set of blocks, e.g. j.blocks[0] = 0x44C0
-    //
-    //             0100 = 0x4 << 3 = 0x4000
-    //             0100 = 0x4 << 2 = 0x0400
-    //             1100 = 0xC << 1 = 0x00C0
-    //             0000 = 0x0 << 0 = 0x0000
-    //                               ------
-    //                               0x44C0
-    //
-    //-------------------------------------------------------------------------
-
+        speed   = { start: 0.6, decrement: 0.005, min: 0.1 },
+        nx      = 10,
+        ny      = 20,
+        nu      = 5;
+    var dx, dy,        
+        blocks,        
+        actions,       
+        playing,       
+        dt,            
+        current,       
+        next,          
+        score,         
+        vscore,        
+        rows,          
+        step;          
     var i = { size: 4, blocks: [0x0F00, 0x2222, 0x00F0, 0x4444], color: 'cyan'   };
     var j = { size: 3, blocks: [0x44C0, 0x8E00, 0x6440, 0x0E20], color: 'blue'   };
     var l = { size: 3, blocks: [0x4460, 0x0E80, 0xC440, 0x2E00], color: 'orange' };
@@ -123,11 +94,6 @@
     var s = { size: 3, blocks: [0x06C0, 0x8C40, 0x6C00, 0x4620], color: 'green'  };
     var t = { size: 3, blocks: [0x0E40, 0x4C40, 0x4E00, 0x4640], color: 'magenta' };
     var z = { size: 3, blocks: [0x0C60, 0x4C80, 0xC600, 0x2640], color: 'red'    };
-
-    //------------------------------------------------
-    // do the bit manipulation and iterate through each
-    // occupied block (x,y) for a given piece
-    //------------------------------------------------
     function eachblock(type, x, y, dir, fn) {
       var bit, result, row = 0, col = 0, blocks = type.blocks[dir];
       for(bit = 0x8000 ; bit > 0 ; bit = bit >> 1) {
@@ -140,10 +106,6 @@
         }
       }
     }
-
-    //-----------------------------------------------------
-    // check if a piece can fit into a position in the grid
-    //-----------------------------------------------------
     function occupied(type, x, y, dir) {
       var result = false
       eachblock(type, x, y, dir, function(x, y) {
@@ -156,11 +118,6 @@
     function unoccupied(type, x, y, dir) {
       return !occupied(type, x, y, dir);
     }
-
-    //-----------------------------------------
-    // start with 4 instances of each piece and
-    // pick randomly until the 'bag is empty'
-    //-----------------------------------------
     var pieces = [];
     function randomPiece() {
       if (pieces.length == 0)
@@ -168,30 +125,23 @@
       var type = pieces.splice(random(0, pieces.length-1), 1)[0];
       return { type: type, dir: DIR.UP, x: Math.round(random(0, nx - type.size)), y: 0 };
     }
-
-
-    //-------------------------------------------------------------------------
-    // GAME LOOP
-    //-------------------------------------------------------------------------
-
     function run() {
-
-      showStats(); // initialize FPS counter
-      addEvents(); // attach keydown and resize events
+      showStats();
+      addEvents();
 
       var last = now = timestamp();
       function frame() {
         now = timestamp();
-        update(Math.min(1, (now - last) / 1000.0)); // using requestAnimationFrame have to be able to handle large delta's caused when it 'hibernates' in a background or non-visible tab
+        update(Math.min(1, (now - last) / 1000.0));
         draw();
         stats.update();
         last = now;
         requestAnimationFrame(frame, canvas);
       }
 
-      resize(); // setup all our sizing information
-      reset();  // reset the per-game variables
-      frame();  // start the first frame
+      resize();
+      reset();
+      frame();
 
     }
 
@@ -206,12 +156,12 @@
     }
 
     function resize(event) {
-      canvas.width   = canvas.clientWidth;  // set canvas logical size equal to its physical size
-      canvas.height  = canvas.clientHeight; // (ditto)
+      canvas.width   = canvas.clientWidth;  
+      canvas.height  = canvas.clientHeight; 
       ucanvas.width  = ucanvas.clientWidth;
       ucanvas.height = ucanvas.clientHeight;
-      dx = canvas.width  / nx; // pixel size of a single tetris block
-      dy = canvas.height / ny; // (ditto)
+      dx = canvas.width  / nx; 
+      dy = canvas.height / ny; 
       invalidate();
       invalidateNext();
     }
@@ -232,14 +182,11 @@
         handled = true;
       }
       if (handled)
-        ev.preventDefault(); // prevent arrow keys from scrolling the page (supported in IE9+ and all other browsers)
+        ev.preventDefault(); 
     }
-
-    //-------------------------------------------------------------------------
-    // GAME LOGIC
-    //-------------------------------------------------------------------------
-
-    myAudio = new Audio('tetris.mp3');
+    //myAudio = new Audio('Audio/tetris-normal.mp3');
+    //myAudio = new Audio('Audio/tetris-halloween.mp3');
+    myAudio = new Audio('Audio/tetris-christmas.mp3');
     myAudio.loop = true;
     
     function play() { hide('start'); reset();          playing = true;
@@ -351,13 +298,13 @@
         }
         if (complete) {
           removeLine(y);
-          y = y + 1; // recheck same line
+          y = y + 1;
           n++;
         }
       }
       if (n > 0) {
         addRows(n);
-        addScore(100*Math.pow(2,n-1)); // 1: 100, 2: 200, 3: 400, 4: 800
+        addScore(100*Math.pow(2,n-1));
       }
     }
 
@@ -369,10 +316,6 @@
       }
     }
 
-    //-------------------------------------------------------------------------
-    // RENDERING
-    //-------------------------------------------------------------------------
-
     var invalid = {};
 
     function invalidate()         { invalid.court  = true; }
@@ -383,7 +326,7 @@
     function draw() {
       ctx.save();
       ctx.lineWidth = 1;
-      ctx.translate(0.5, 0.5); // for crisp 1px black lines
+      ctx.translate(0.5, 0.5);
       drawCourt();
       drawNext();
       drawScore();
@@ -403,14 +346,14 @@
               drawBlock(ctx, x, y, block.color);
           }
         }
-        ctx.strokeRect(0, 0, nx*dx - 1, ny*dy - 1); // court boundary
+        ctx.strokeRect(0, 0, nx*dx - 1, ny*dy - 1);
         invalid.court = false;
       }
     }
 
     function drawNext() {
       if (invalid.next) {
-        var padding = (nu - next.type.size) / 2; // half-arsed attempt at centering next piece display
+        var padding = (nu - next.type.size) / 2;
         uctx.save();
         uctx.translate(0.5, 0.5);
         uctx.clearRect(0, 0, nu*dx, nu*dy);
@@ -447,11 +390,6 @@
       ctx.fillRect(x*dx, y*dy, dx, dy);
       ctx.strokeRect(x*dx, y*dy, dx, dy)
     }
-
-    //-------------------------------------------------------------------------
-    // FINALLY, lets run the game
-    //-------------------------------------------------------------------------
-
     run();
 
   </script>
