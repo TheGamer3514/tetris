@@ -1,35 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- Favicon -->
     <link rel="shortcut icon" type="image/png" href="icon.png"/>
+
+    <!-- Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fuzzy+Bubbles&display=swap" rel="stylesheet">
+
+    <!-- Title -->
     <title>Silly Tetris</title>
+
+    <!-- Meta SEO -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Silly Tetris is a simple online Tetris game. Play for free directly in your browser.">
+    <meta name="keywords" content="Tetris, Silly Tetris, online Tetris, free Tetris game, browser puzzle game">
+    <meta name="author" content="SillyDev">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Silly Tetris">
+    <meta property="og:description" content="Silly Tetris is a simple online Tetris game. Play free in your browser!">
+    <meta property="og:image" content="https://sillydev.co.uk/assets/images/logo-sillydev-circle.png">
+    <meta property="og:url" content="https://tetris.sillydev.co.uk">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Silly Tetris">
+    <meta name="twitter:description" content="Play Silly Tetris — a free and simple online Tetris game.">
+    <meta name="twitter:image" content="https://sillydev.co.uk/assets/images/logo-sillydev-circle.png">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://tetris.sillydev.co.uk">
+
+    <!-- CSS -->
     <style>
         body {
             font-family: 'Fuzzy Bubbles', cursive;
-            background-color: #1c1c1c; /* Dark background */
-            color: #f8f8f8; /* Light text color */
+            background-color: #1c1c1c;
+            color: #f8f8f8;
         }
         #tetris {
             margin: 1em auto;
             padding: 1em;
-            border: 4px solid #333; /* Dark border */
+            border: 4px solid #333;
             border-radius: 10px;
-            background-color: #333; /* Darker background for the game area */
+            background-color: #333;
         }
         #stats {
             display: inline-block;
             vertical-align: top;
-            color: #f8f8f8; /* Light text color for stats */
+            color: #f8f8f8;
         }
         #canvas {
             display: inline-block;
             vertical-align: top;
-            background-color: #1c1c1c; /* Dark background for the canvas */
-            box-shadow: 10px 10px 10px #000; /* Dark shadow */
-            border: 2px solid #444; /* Dark border */
+            background-color: #1c1c1c;
+            box-shadow: 10px 10px 10px #000;
+            border: 2px solid #444;
         }
         #menu {
             display: inline-block;
@@ -42,15 +72,15 @@
         }
         #menu p a {
             text-decoration: none;
-            color: #f8f8f8; /* Light text color for links */
+            color: #f8f8f8;
         }
         #upcoming {
             display: block;
             margin: 0 auto;
-            background-color: #444; /* Dark background for upcoming pieces */
+            background-color: #444;
         }
         #score, #rows {
-            color: #ffcc00; /* Highlight color for score and rows */
+            color: #ffcc00;
             font-weight: bold;
             vertical-align: middle;
         }
@@ -102,6 +132,9 @@
             #canvas { width: 400px; height: 800px; }
         }
     </style>
+
+    <!-- Analytics / Tracking -->
+    <script defer src="https://tracking.sillydev.co.uk/script.js" data-website-id="5091895e-3f53-438f-a6cb-85070e6bd72a"></script>
 </head>
 <body>
     <div id="tetris">
