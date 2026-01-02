@@ -1,0 +1,44 @@
+.toggle {
+  margin: 1em 0;
+  text-align: center;
+}
+
+.label {
+  font-size: 0.8em;
+  opacity: 0.8;
+  margin-bottom: 0.5em;
+}
+
+.buttons {
+  display: flex;
+  gap: 0.5em;
+  justify-content: center;
+}
+
+.button {
+  background-color: #444;
+  color: #f8f8f8;
+  border: 2px solid #555;
+  border-radius: 6px;
+  padding: 0.4em 0.8em;
+  font-family: inherit;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button:hover {
+  background-color: #555;
+  border-color: #666;
+}
+
+.button.active {
+  background-color: #ffcc00;
+  color: #1c1c1c;
+  border-color: #ffcc00;
+  font-weight: bold;
+}
+
+.button:active {
+  transform: scale(0.95);
+}
