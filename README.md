@@ -42,7 +42,7 @@ npm start
 
 - **Arrow Left/Right**: Move piece horizontally
 - **Arrow Up**: Rotate piece
-- **Arrow Down / Space**: Drop piece faster
+- **Arrow Down / Space**: Soft drop (drop piece faster)
 - **Enter**: Start game
 - **Escape**: End game
 

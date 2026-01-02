@@ -208,10 +208,3 @@ export function removeCompleteLines(
 
   return { newBlocks, linesRemoved };
 }
-
-/**
- * Format score for display
- */
-export function formatScore(score: number): string {
-  return Math.floor(score).toString();
-}

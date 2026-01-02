@@ -43,17 +43,5 @@ export interface GameState {
   next: Piece | null;
 }
 
-export interface GameSpeed {
-  start: number;
-  decrement: number;
-  min: number;
-}
-
-export const DEFAULT_SPEED: GameSpeed = {
-  start: 0.6,
-  decrement: 0.005,
-  min: 0.1,
-};
-
 export const BOARD_WIDTH = 10;
 export const BOARD_HEIGHT = 20;

@@ -60,7 +60,7 @@ export function TetrisGame() {
             
             <div className={styles.controlItem}>
               <div className={styles.keyButton}>Space</div>
-              <div className={styles.keyLabel}>Hard Drop</div>
+              <div className={styles.keyLabel}>Soft Drop</div>
             </div>
             
             <div className={styles.controlItem}>
