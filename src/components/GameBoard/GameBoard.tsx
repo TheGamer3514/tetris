@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Piece, TetrominoType, BOARD_WIDTH, BOARD_HEIGHT } from '@/types/tetris';
 import { eachBlock, getBlock } from '@/utils/gameLogic';
 import styles from './GameBoard.module.css';
@@ -13,6 +13,7 @@ interface GameBoardProps {
 
 export function GameBoard({ blocks, current, playing }: GameBoardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [, setResizeCounter] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -71,6 +72,8 @@ export function GameBoard({ blocks, current, playing }: GameBoardProps) {
       if (!canvas) return;
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
+      // Trigger re-render
+      setResizeCounter(prev => prev + 1);
     };
 
     window.addEventListener('resize', handleResize);
