@@ -51,7 +51,6 @@ export const metadata: Metadata = {
     title: 'Silly Tetris - Free Online Tetris Game',
     description: 'Play classic Tetris for free in your browser! Stack blocks, clear lines, and beat your high score.',
     images: ['https://sillydev.co.uk/assets/images/logo-sillydev-circle.png'],
-    creator: '@sillydev',
   },
   icons: {
     shortcut: '/icon.png',

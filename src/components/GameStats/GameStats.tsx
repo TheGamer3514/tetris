@@ -1,4 +1,3 @@
-import { formatScore } from '@/utils/gameLogic';
 import styles from './GameStats.module.css';
 
 interface GameStatsProps {
@@ -11,7 +10,7 @@ export function GameStats({ score, rows }: GameStatsProps) {
     <div className={styles.stats}>
       <div className={styles.statItem}>
         <div className={styles.label}>Score</div>
-        <div className={styles.value}>{formatScore(score)}</div>
+        <div className={styles.value}>{score}</div>
       </div>
       <div className={styles.statItem}>
         <div className={styles.label}>Lines</div>

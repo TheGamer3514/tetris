@@ -75,19 +75,6 @@ export function useTetris(): UseTetrisReturn {
     setNext(secondPiece);
   }, [getNextPiece]);
 
-  // Handle piece drop
-  const dropPiece = useCallback(() => {
-    if (!current) return;
-
-    setBlocks((prevBlocks) => {
-      let newBlocks = prevBlocks;
-      eachBlock(current.type, current.x, current.y, current.dir, (x, y) => {
-        newBlocks = setBlock(newBlocks, x, y, current.type);
-      });
-      return newBlocks;
-    });
-  }, [current]);
-
   // Move piece
   const move = useCallback((dir: number): boolean => {
     if (!current) return false;
@@ -217,8 +204,11 @@ export function useTetris(): UseTetrisReturn {
     if (!playing) return;
 
     const step = calculateStep(rows);
+    let isPlaying = true;
 
     const gameLoop = (timestamp: number) => {
+      if (!isPlaying) return;
+      
       if (!lastTimeRef.current) {
         lastTimeRef.current = timestamp;
       }
@@ -237,12 +227,15 @@ export function useTetris(): UseTetrisReturn {
         drop();
       }
 
-      animationFrameRef.current = requestAnimationFrame(gameLoop);
+      if (isPlaying) {
+        animationFrameRef.current = requestAnimationFrame(gameLoop);
+      }
     };
 
     animationFrameRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
+      isPlaying = false;
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
