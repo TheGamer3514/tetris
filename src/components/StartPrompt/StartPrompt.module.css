@@ -1,0 +1,13 @@
+.start {
+  margin: 0.5em 0;
+  text-align: center;
+}
+
+.start a {
+  text-decoration: none;
+  color: #f8f8f8;
+}
+
+.start a:hover {
+  text-decoration: underline;
+}

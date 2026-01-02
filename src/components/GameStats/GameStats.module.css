@@ -1,0 +1,29 @@
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8em;
+  margin: 1em 0;
+}
+
+.statItem {
+  background-color: #1c1c1c;
+  padding: 0.6em 0.8em;
+  border-radius: 6px;
+  border: 2px solid #444;
+}
+
+.label {
+  font-size: 0.65em;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2em;
+}
+
+.value {
+  color: #ffcc00;
+  font-weight: bold;
+  font-size: 1em;
+  letter-spacing: 0.05em;
+  word-break: break-all;
+}
