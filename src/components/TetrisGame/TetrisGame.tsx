@@ -72,8 +72,8 @@ export function TetrisGame() {
       </div>
       
       <footer className={styles.footer}>
-        <a href="https://discord.gg/sillydev" target="_blank" rel="noopener noreferrer" className={styles.discordLink}>
-          💬 Join our Discord community
+        <a href="https://discord.gg/mUpVm596As" target="_blank" rel="noopener noreferrer" className={styles.discordLink}>
+          💬 Join our Discord server
         </a>
       </footer>
     </>
