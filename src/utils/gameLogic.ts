@@ -107,13 +107,13 @@ function random(min: number, max: number): number {
 }
 
 /**
- * Create a shuffled bag of pieces (7-bag randomizer)
+ * Create a shuffled bag of pieces (28-bag randomizer: 4 of each piece type)
  */
 export function createPieceBag(): TetrominoType[] {
   const pieces: TetrominoType[] = [];
   const types = Object.values(TETROMINOES);
   
-  // Add 4 of each piece type
+  // Add 4 of each piece type (28 pieces total)
   types.forEach((type) => {
     for (let i = 0; i < 4; i++) {
       pieces.push(type);
@@ -139,7 +139,7 @@ export function getRandomPiece(bag: TetrominoType[]): { piece: Piece; newBag: Te
     newBag = createPieceBag();
   }
   
-  const index = Math.floor(random(0, newBag.length - 1));
+  const index = Math.floor(random(0, newBag.length));
   const type = newBag.splice(index, 1)[0];
   
   const piece: Piece = {

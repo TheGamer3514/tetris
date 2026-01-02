@@ -75,19 +75,6 @@ export function useTetris(): UseTetrisReturn {
     setNext(secondPiece);
   }, [getNextPiece]);
 
-  // Handle piece drop
-  const dropPiece = useCallback(() => {
-    if (!current) return;
-
-    setBlocks((prevBlocks) => {
-      let newBlocks = prevBlocks;
-      eachBlock(current.type, current.x, current.y, current.dir, (x, y) => {
-        newBlocks = setBlock(newBlocks, x, y, current.type);
-      });
-      return newBlocks;
-    });
-  }, [current]);
-
   // Move piece
   const move = useCallback((dir: number): boolean => {
     if (!current) return false;
