@@ -70,9 +70,9 @@ src/
 
 ## Tech Stack
 
-- Next.js 14
-- React 18
-- TypeScript
+- Next.js 16
+- React 19
+- TypeScript 5
 - CSS Modules
 
 ## Contributors Welcome! :)

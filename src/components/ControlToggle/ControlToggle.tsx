@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import styles from './ControlToggle.module.css';
 
 export type ControlScheme = 'arrows' | 'wasd';

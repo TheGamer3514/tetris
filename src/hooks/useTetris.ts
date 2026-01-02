@@ -5,8 +5,6 @@ import {
   Piece,
   TetrominoType,
   DIR,
-  BOARD_WIDTH,
-  BOARD_HEIGHT,
 } from '@/types/tetris';
 import {
   createEmptyBoard,
@@ -131,6 +129,18 @@ export function useTetris(): UseTetrisReturn {
     }
   }, [current, blocks]);
 
+  // End game function
+  const endGame = useCallback((finalScore?: number) => {
+    setPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    // Track game end with score
+    if (typeof window !== 'undefined' && (window as any).umami) {
+      (window as any).umami.track('game_ended', { score: finalScore || 0 });
+    }
+  }, []);
+
   // Drop logic
   const drop = useCallback(() => {
     if (!current) return;
@@ -141,8 +151,6 @@ export function useTetris(): UseTetrisReturn {
       setCurrent((prev) => prev ? { ...prev, y: newY } : null);
     } else {
       // Piece has landed
-      setScore((prev) => prev + 10);
-
       // Place piece on board
       let newBlocks = blocks;
       eachBlock(current.type, current.x, current.y, current.dir, (x, y) => {
@@ -153,9 +161,19 @@ export function useTetris(): UseTetrisReturn {
       const { newBlocks: clearedBlocks, linesRemoved } = removeCompleteLines(newBlocks);
       setBlocks(clearedBlocks);
 
+      // Calculate score changes
+      const pieceScore = 10;
+      const lineScore = linesRemoved > 0 ? 100 * Math.pow(2, linesRemoved - 1) : 0;
+
+      // Update score and rows
+      let finalScore = 0;
+      setScore((prev) => {
+        finalScore = prev + pieceScore + lineScore;
+        return finalScore;
+      });
+
       if (linesRemoved > 0) {
         setRows((prev) => prev + linesRemoved);
-        setScore((prev) => prev + 100 * Math.pow(2, linesRemoved - 1));
       }
 
       // Get next piece
@@ -163,15 +181,8 @@ export function useTetris(): UseTetrisReturn {
       const newNextPiece = getNextPiece();
       
       if (nextPiece && isOccupied(nextPiece.type, nextPiece.x, nextPiece.y, nextPiece.dir, clearedBlocks)) {
-        // Game over - track with final score
-        const finalScore = score + 10 + (linesRemoved > 0 ? 100 * Math.pow(2, linesRemoved - 1) : 0);
-        setPlaying(false);
-        if (audioRef.current) {
-          audioRef.current.pause();
-        }
-        if (typeof window !== 'undefined' && (window as any).umami) {
-          (window as any).umami.track('game_ended', { score: finalScore });
-        }
+        // Game over - use the calculated final score
+        endGame(finalScore);
         return;
       }
 
@@ -179,7 +190,7 @@ export function useTetris(): UseTetrisReturn {
       setNext(newNextPiece);
       actionsRef.current = [];
     }
-  }, [current, next, blocks, getNextPiece]);
+  }, [current, next, blocks, getNextPiece, endGame]);
 
   // Handle action
   const handleAction = useCallback((action: number | undefined) => {
@@ -314,12 +325,15 @@ export function useTetris(): UseTetrisReturn {
 
   // Initialize audio
   useEffect(() => {
-    audioRef.current = new Audio('/Audio/tetris-normal.mp3');
-    audioRef.current.loop = true;
+    const audio = new Audio('/Audio/tetris-normal.mp3');
+    audio.loop = true;
+    audioRef.current = audio;
 
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.load();
         audioRef.current = null;
       }
     };
@@ -337,17 +351,6 @@ export function useTetris(): UseTetrisReturn {
       (window as any).umami.track('game_started');
     }
   }, [resetGame]);
-
-  const endGame = useCallback((finalScore?: number) => {
-    setPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    // Track game end with score
-    if (typeof window !== 'undefined' && (window as any).umami) {
-      (window as any).umami.track('game_ended', { score: finalScore || score });
-    }
-  }, [score]);
 
   return {
     playing,
