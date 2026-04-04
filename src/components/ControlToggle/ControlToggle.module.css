@@ -5,8 +5,10 @@
 
 .label {
   font-size: 0.8em;
-  opacity: 0.8;
+  opacity: var(--opacity-muted);
   margin-bottom: 0.5em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .buttons {
@@ -16,26 +18,26 @@
 }
 
 .button {
-  background-color: #444;
-  color: #f8f8f8;
-  border: 2px solid #555;
-  border-radius: 6px;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius-md);
   padding: 0.4em 0.8em;
   font-family: inherit;
   font-size: 0.8em;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
 }
 
 .button:hover {
-  background-color: #555;
+  background-color: var(--color-border-light);
   border-color: #666;
 }
 
 .button.active {
-  background-color: #ffcc00;
-  color: #1c1c1c;
-  border-color: #ffcc00;
+  background-color: var(--color-accent);
+  color: var(--color-bg-primary);
+  border-color: var(--color-accent);
   font-weight: bold;
 }
 

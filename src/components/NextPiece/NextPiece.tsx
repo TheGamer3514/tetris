@@ -11,6 +11,26 @@ interface NextPieceProps {
 
 const PREVIEW_SIZE = 5;
 
+function drawBlock(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  dx: number,
+  dy: number,
+  color: string
+) {
+  ctx.fillStyle = color;
+  ctx.fillRect(px, py, dx, dy);
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(px, py, dx, 2);
+  ctx.fillRect(px, py, 2, dy);
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(px, py + dy - 2, dx, 2);
+  ctx.fillRect(px + dx - 2, py, 2, dy);
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.strokeRect(px, py, dx, dy);
+}
+
 export function NextPiece({ piece }: NextPieceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -38,10 +58,7 @@ export function NextPiece({ piece }: NextPieceProps) {
     if (piece) {
       const padding = (PREVIEW_SIZE - piece.type.size) / 2;
       eachBlock(piece.type, padding, padding, piece.dir, (x, y) => {
-        ctx.fillStyle = piece.type.color;
-        ctx.fillRect(x * dx, y * dy, dx, dy);
-        ctx.strokeStyle = '#333';
-        ctx.strokeRect(x * dx, y * dy, dx, dy);
+        drawBlock(ctx, x * dx, y * dy, dx, dy, piece.type.color);
       });
     }
 

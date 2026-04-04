@@ -208,3 +208,17 @@ export function removeCompleteLines(
 
   return { newBlocks, linesRemoved };
 }
+
+/**
+ * Find the Y position where a piece would land if dropped straight down
+ */
+export function findDropPosition(
+  piece: Piece,
+  blocks: (TetrominoType | null)[][]
+): number {
+  let ghostY = piece.y;
+  while (!isOccupied(piece.type, piece.x, ghostY + 1, piece.dir, blocks)) {
+    ghostY++;
+  }
+  return ghostY;
+}

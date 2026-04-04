@@ -1,3 +1,20 @@
+:root {
+  --color-bg-primary: #1c1c1c;
+  --color-bg-secondary: #333;
+  --color-bg-elevated: #444;
+  --color-text-primary: #f8f8f8;
+  --color-accent: #ffcc00;
+  --color-border: #444;
+  --color-border-light: #555;
+  --opacity-muted: 0.7;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,8 +28,8 @@ body {
 
 body {
   font-family: 'Fuzzy Bubbles', cursive;
-  background-color: #1c1c1c;
-  color: #f8f8f8;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 main {

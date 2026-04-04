@@ -36,6 +36,7 @@ export function TetrisGame() {
         <div className={styles.rightPanel}>
           <ControlToggle scheme={controlScheme} onChange={setControlScheme} />
           
+          <p className={styles.sectionTitle}>Controls</p>
           <div className={styles.controlsSection}>
             <div className={styles.controlItem}>
               <div className={styles.keyButton}>
