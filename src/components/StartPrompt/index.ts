@@ -1,1 +1,0 @@
-export { StartPrompt } from './StartPrompt';

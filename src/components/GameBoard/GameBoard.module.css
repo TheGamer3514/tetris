@@ -1,65 +1,28 @@
 @keyframes boardGlow {
-  from { box-shadow: 10px 10px 10px #000, 0 0 0px rgba(255, 204, 0, 0); }
-  to { box-shadow: 10px 10px 10px #000, 0 0 12px rgba(255, 204, 0, 0.15); }
+  from { box-shadow: 6px 6px 14px #000, 0 0 0px rgba(255, 204, 0, 0); }
+  to { box-shadow: 6px 6px 14px #000, 0 0 14px rgba(255, 204, 0, 0.18); }
 }
 
 .canvas {
-  display: inline-block;
+  display: block;
   vertical-align: top;
   background-color: var(--color-bg-primary);
-  box-shadow: 10px 10px 10px #000;
+  box-shadow: 6px 6px 14px #000;
   border: 2px solid var(--color-border);
+  /* Tetris board is 10 wide x 20 tall */
+  aspect-ratio: 1 / 2;
+  height: min(72vh, 640px);
+  width: auto;
+  max-width: 100%;
+  touch-action: none;
 }
 
 .canvasPlaying {
   animation: boardGlow 2s ease-in-out infinite alternate;
 }
 
-@media screen and (min-width: 0px) and (min-height: 0px) {
+@media screen and (max-width: 768px) {
   .canvas {
-    width: 100px;
-    height: 200px;
-  }
-}
-
-@media screen and (min-width: 400px) and (min-height: 400px) {
-  .canvas {
-    width: 150px;
-    height: 300px;
-  }
-}
-
-@media screen and (min-width: 500px) and (min-height: 500px) {
-  .canvas {
-    width: 200px;
-    height: 400px;
-  }
-}
-
-@media screen and (min-width: 600px) and (min-height: 600px) {
-  .canvas {
-    width: 250px;
-    height: 500px;
-  }
-}
-
-@media screen and (min-width: 700px) and (min-height: 700px) {
-  .canvas {
-    width: 300px;
-    height: 600px;
-  }
-}
-
-@media screen and (min-width: 800px) and (min-height: 800px) {
-  .canvas {
-    width: 350px;
-    height: 700px;
-  }
-}
-
-@media screen and (min-width: 900px) and (min-height: 900px) {
-  .canvas {
-    width: 400px;
-    height: 800px;
+    height: min(62vh, 640px);
   }
 }

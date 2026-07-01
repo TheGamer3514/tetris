@@ -1,360 +1,637 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Piece,
   TetrominoType,
+  GameState,
+  ControlScheme,
+  MusicTrack,
   DIR,
 } from '@/types/tetris';
 import {
   createEmptyBoard,
   createPieceBag,
   getRandomPiece,
+  spawnPiece,
   isOccupied,
   isUnoccupied,
   eachBlock,
   setBlock,
   removeCompleteLines,
+  findDropPosition,
   calculateStep,
+  calculateLevel,
+  lineClearScore,
 } from '@/utils/gameLogic';
 
-interface UseTetrisReturn {
+const BEST_SCORE_KEY = 'silly-tetris:best-score';
+const CONTROL_SCHEME_KEY = 'silly-tetris:control-scheme';
+const MUSIC_TRACK_KEY = 'silly-tetris:music-track';
+const MUTED_KEY = 'silly-tetris:muted';
+
+const MUSIC_SRC: Record<MusicTrack, string> = {
+  normal: '/Audio/tetris-normal.mp3',
+  halloween: '/Audio/tetris-halloween.mp3',
+  christmas: '/Audio/tetris-christmas.mp3',
+};
+
+export interface TetrisActions {
+  moveLeft: () => void;
+  moveRight: () => void;
+  rotate: () => void;
+  softDrop: () => void;
+  hardDrop: () => void;
+  hold: () => void;
+}
+
+/** The slice of game state the UI renders from. */
+interface TetrisSnapshot {
   playing: boolean;
+  paused: boolean;
+  gameOver: boolean;
   score: number;
+  bestScore: number;
   rows: number;
+  level: number;
   blocks: (TetrominoType | null)[][];
   current: Piece | null;
   next: Piece | null;
-  controlScheme: 'arrows' | 'wasd';
-  setControlScheme: (scheme: 'arrows' | 'wasd') => void;
+  hold: Piece | null;
+  canHold: boolean;
+  /** True only when the score at game over strictly beat the previous best. */
+  newBest: boolean;
+  controlScheme: ControlScheme;
+  musicTrack: MusicTrack;
+  muted: boolean;
+}
+
+export interface UseTetrisReturn extends TetrisSnapshot {
+  setControlScheme: (scheme: ControlScheme) => void;
+  setMusicTrack: (track: MusicTrack) => void;
+  toggleMute: () => void;
   startGame: () => void;
   endGame: () => void;
+  togglePause: () => void;
+  actions: TetrisActions;
+}
+
+function createInitialState(): GameState {
+  // Preload a "next" piece so the preview isn't empty before the first game.
+  const bag = createPieceBag();
+  const { piece } = getRandomPiece(bag);
+  return {
+    playing: false,
+    paused: false,
+    gameOver: false,
+    score: 0,
+    bestScore: 0,
+    rows: 0,
+    level: 1,
+    blocks: createEmptyBoard(),
+    current: null,
+    next: piece,
+    hold: null,
+    canHold: true,
+    bag: [],
+  };
 }
 
 export function useTetris(): UseTetrisReturn {
-  const [playing, setPlaying] = useState(false);
-  const [score, setScore] = useState(0);
-  const [rows, setRows] = useState(0);
-  const [blocks, setBlocks] = useState<(TetrominoType | null)[][]>(() => createEmptyBoard());
-  const [current, setCurrent] = useState<Piece | null>(null);
-  const [controlScheme, setControlScheme] = useState<'arrows' | 'wasd'>('arrows');
-  const [next, setNext] = useState<Piece | null>(() => {
-    // Preload next piece on first load
-    const bag = createPieceBag();
-    const { piece } = getRandomPiece(bag);
-    return piece;
-  });
-  
-  const pieceBagRef = useRef<TetrominoType[]>([]);
-  const actionsRef = useRef<number[]>([]);
+  const initialGame = useMemo(() => createInitialState(), []);
+  const stateRef = useRef<GameState>(initialGame);
+
+  // Config lives in refs so input handlers always read fresh values; it is
+  // mirrored into the render snapshot below.
+  const controlSchemeRef = useRef<ControlScheme>('arrows');
+  const musicTrackRef = useRef<MusicTrack>('normal');
+  const mutedRef = useRef(false);
+  const newBestRef = useRef(false);
+
+  // Render snapshot: the mutable ref is the source of truth, and every mutation
+  // publishes a fresh snapshot via sync() so React re-renders.
+  const [snapshot, setSnapshot] = useState<TetrisSnapshot>(() => ({
+    playing: initialGame.playing,
+    paused: initialGame.paused,
+    gameOver: initialGame.gameOver,
+    score: initialGame.score,
+    bestScore: initialGame.bestScore,
+    rows: initialGame.rows,
+    level: initialGame.level,
+    blocks: initialGame.blocks,
+    current: initialGame.current,
+    next: initialGame.next,
+    hold: initialGame.hold,
+    canHold: initialGame.canHold,
+    newBest: false,
+    controlScheme: 'arrows',
+    musicTrack: 'normal',
+    muted: false,
+  }));
+
+  const sync = useCallback(() => {
+    const s = stateRef.current;
+    setSnapshot({
+      playing: s.playing,
+      paused: s.paused,
+      gameOver: s.gameOver,
+      score: s.score,
+      bestScore: s.bestScore,
+      rows: s.rows,
+      level: s.level,
+      blocks: s.blocks,
+      current: s.current,
+      next: s.next,
+      hold: s.hold,
+      canHold: s.canHold,
+      newBest: newBestRef.current,
+      controlScheme: controlSchemeRef.current,
+      musicTrack: musicTrackRef.current,
+      muted: mutedRef.current,
+    });
+  }, []);
+
+  // Game-loop bookkeeping
   const dtRef = useRef(0);
   const lastTimeRef = useRef(0);
-  const animationFrameRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const loopActiveRef = useRef(false);
+  const tickRef = useRef<(timestamp: number) => void>(() => {});
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Get next piece from bag
-  const getNextPiece = useCallback(() => {
-    const { piece, newBag } = getRandomPiece(pieceBagRef.current);
-    pieceBagRef.current = newBag;
-    return piece;
+  // ---- Audio helpers -------------------------------------------------------
+
+  const playMusic = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || mutedRef.current) return;
+    audio.play().catch(() => {});
   }, []);
 
-  // Reset game state
-  const resetGame = useCallback(() => {
-    pieceBagRef.current = createPieceBag();
-    actionsRef.current = [];
-    dtRef.current = 0;
-    
-    setBlocks(createEmptyBoard());
-    setScore(0);
-    setRows(0);
-    
-    const firstPiece = getNextPiece();
-    const secondPiece = getNextPiece();
-    setCurrent(firstPiece);
-    setNext(secondPiece);
-  }, [getNextPiece]);
+  const pauseMusic = useCallback(() => {
+    audioRef.current?.pause();
+  }, []);
 
-  // Move piece
-  const move = useCallback((dir: number): boolean => {
-    if (!current) return false;
+  const restartMusic = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = 0;
+    playMusic();
+  }, [playMusic]);
 
-    let newX = current.x;
-    let newY = current.y;
+  // ---- Analytics -----------------------------------------------------------
 
-    switch (dir) {
-      case DIR.RIGHT:
-        newX = current.x + 1;
-        break;
-      case DIR.LEFT:
-        newX = current.x - 1;
-        break;
-      case DIR.DOWN:
-        newY = current.y + 1;
-        break;
-    }
+  const track = useCallback((event: string, data?: Record<string, unknown>) => {
+    if (typeof window === 'undefined') return;
+    const umami = (window as unknown as { umami?: { track: (e: string, d?: unknown) => void } }).umami;
+    umami?.track(event, data);
+  }, []);
 
-    setBlocks((prevBlocks) => {
-      if (isUnoccupied(current.type, newX, newY, current.dir, prevBlocks)) {
-        setCurrent((prev) => prev ? { ...prev, x: newX, y: newY } : null);
+  // ---- Persistence ---------------------------------------------------------
+
+  const persistBestScore = useCallback(() => {
+    const s = stateRef.current;
+    const beat = s.score > s.bestScore;
+    newBestRef.current = beat;
+    if (beat) {
+      s.bestScore = s.score;
+      try {
+        window.localStorage.setItem(BEST_SCORE_KEY, String(s.score));
+      } catch {
+        /* localStorage may be unavailable (private mode) */
       }
-      return prevBlocks;
+    }
+  }, []);
+
+  // ---- Game loop -----------------------------------------------------------
+
+  const stopLoop = useCallback(() => {
+    loopActiveRef.current = false;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  }, []);
+
+  const handleGameOver = useCallback(() => {
+    const s = stateRef.current;
+    s.playing = false;
+    s.paused = false;
+    s.gameOver = true;
+    s.current = null;
+    stopLoop();
+    pauseMusic();
+    persistBestScore();
+    track('game_ended', { score: s.score, rows: s.rows, level: s.level });
+    sync();
+  }, [stopLoop, pauseMusic, persistBestScore, track, sync]);
+
+  // Lock the current piece into the board, clear lines, then spawn the next one.
+  const lockPiece = useCallback(() => {
+    const s = stateRef.current;
+    if (!s.current) return;
+    const current = s.current;
+
+    let newBlocks = s.blocks;
+    eachBlock(current.type, current.x, current.y, current.dir, (x, y) => {
+      newBlocks = setBlock(newBlocks, x, y, current.type);
     });
 
-    // Need to check synchronously for drop logic
-    return isUnoccupied(current.type, newX, newY, current.dir, blocks);
-  }, [current, blocks]);
+    const { newBlocks: cleared, linesRemoved } = removeCompleteLines(newBlocks);
+    s.blocks = cleared;
 
-  // Rotate piece
-  const rotate = useCallback(() => {
-    if (!current) return;
-
-    const newDir = current.dir === DIR.MAX ? DIR.MIN : current.dir + 1;
-
-    if (isUnoccupied(current.type, current.x, current.y, newDir, blocks)) {
-      setCurrent((prev) => prev ? { ...prev, dir: newDir } : null);
+    if (linesRemoved > 0) {
+      s.rows += linesRemoved;
+      s.level = calculateLevel(s.rows);
+      s.score += lineClearScore(linesRemoved, s.level);
     }
-  }, [current, blocks]);
 
-  // End game function
-  const endGame = useCallback((finalScore?: number) => {
-    setPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
+    const nextPiece = s.next;
+    const { piece, newBag } = getRandomPiece(s.bag);
+    s.bag = newBag;
+    s.next = piece;
+    s.canHold = true;
+
+    if (!nextPiece || isOccupied(nextPiece.type, nextPiece.x, nextPiece.y, nextPiece.dir, s.blocks)) {
+      handleGameOver();
+      return;
     }
-    // Track game end with score
-    if (typeof window !== 'undefined' && (window as any).umami) {
-      (window as any).umami.track('game_ended', { score: finalScore || 0 });
+
+    s.current = nextPiece;
+    dtRef.current = 0;
+  }, [handleGameOver]);
+
+  // One step of gravity (also used by the manual soft drop).
+  const dropStep = useCallback((fromPlayer: boolean) => {
+    const s = stateRef.current;
+    if (!s.current || s.paused || s.gameOver) return;
+
+    const newY = s.current.y + 1;
+    if (isUnoccupied(s.current.type, s.current.x, newY, s.current.dir, s.blocks)) {
+      s.current = { ...s.current, y: newY };
+      if (fromPlayer) s.score += 1;
+      sync();
+    } else {
+      lockPiece();
+      sync();
     }
+  }, [lockPiece, sync]);
+
+  const tick = useCallback((timestamp: number) => {
+    if (!loopActiveRef.current) return;
+    const s = stateRef.current;
+
+    if (!lastTimeRef.current) lastTimeRef.current = timestamp;
+    const deltaTime = Math.min(1, (timestamp - lastTimeRef.current) / 1000);
+    lastTimeRef.current = timestamp;
+
+    if (s.playing && !s.paused && !s.gameOver) {
+      const step = calculateStep(s.level);
+      dtRef.current += deltaTime;
+      let steps = 0;
+      while (dtRef.current > step && steps < 8) {
+        dtRef.current -= step;
+        dropStep(false);
+        steps++;
+        if (stateRef.current.gameOver) break;
+      }
+    } else {
+      dtRef.current = 0;
+    }
+
+    if (loopActiveRef.current) {
+      rafRef.current = requestAnimationFrame(tickRef.current);
+    }
+  }, [dropStep]);
+
+  useEffect(() => {
+    tickRef.current = tick;
+  }, [tick]);
+
+  const startLoop = useCallback(() => {
+    if (loopActiveRef.current) return;
+    loopActiveRef.current = true;
+    lastTimeRef.current = 0;
+    dtRef.current = 0;
+    rafRef.current = requestAnimationFrame(tickRef.current);
   }, []);
 
-  // Drop logic
-  const drop = useCallback(() => {
-    if (!current) return;
+  // ---- Player actions ------------------------------------------------------
 
-    const newY = current.y + 1;
+  const canAct = useCallback(() => {
+    const s = stateRef.current;
+    return s.playing && !s.paused && !s.gameOver && s.current !== null;
+  }, []);
 
-    if (isUnoccupied(current.type, current.x, newY, current.dir, blocks)) {
-      setCurrent((prev) => prev ? { ...prev, y: newY } : null);
-    } else {
-      // Piece has landed
-      // Place piece on board
-      let newBlocks = blocks;
-      eachBlock(current.type, current.x, current.y, current.dir, (x, y) => {
-        newBlocks = setBlock(newBlocks, x, y, current.type);
-      });
+  const move = useCallback((dx: number) => {
+    if (!canAct()) return;
+    const s = stateRef.current;
+    const current = s.current!;
+    const newX = current.x + dx;
+    if (isUnoccupied(current.type, newX, current.y, current.dir, s.blocks)) {
+      s.current = { ...current, x: newX };
+      sync();
+    }
+  }, [canAct, sync]);
 
-      // Remove complete lines
-      const { newBlocks: clearedBlocks, linesRemoved } = removeCompleteLines(newBlocks);
-      setBlocks(clearedBlocks);
+  const moveLeft = useCallback(() => move(-1), [move]);
+  const moveRight = useCallback(() => move(1), [move]);
 
-      // Calculate score changes
-      const pieceScore = 10;
-      const lineScore = linesRemoved > 0 ? 100 * Math.pow(2, linesRemoved - 1) : 0;
-
-      // Update score and rows
-      let finalScore = 0;
-      setScore((prev) => {
-        finalScore = prev + pieceScore + lineScore;
-        return finalScore;
-      });
-
-      if (linesRemoved > 0) {
-        setRows((prev) => prev + linesRemoved);
+  const rotate = useCallback(() => {
+    if (!canAct()) return;
+    const s = stateRef.current;
+    const current = s.current!;
+    const newDir = current.dir === DIR.MAX ? DIR.MIN : current.dir + 1;
+    // Basic wall kick: try in place, then nudge horizontally if blocked.
+    for (const kick of [0, -1, 1, -2, 2]) {
+      const newX = current.x + kick;
+      if (isUnoccupied(current.type, newX, current.y, newDir, s.blocks)) {
+        s.current = { ...current, x: newX, dir: newDir };
+        sync();
+        return;
       }
+    }
+  }, [canAct, sync]);
 
-      // Get next piece
-      const nextPiece = next;
-      const newNextPiece = getNextPiece();
-      
-      if (nextPiece && isOccupied(nextPiece.type, nextPiece.x, nextPiece.y, nextPiece.dir, clearedBlocks)) {
-        // Game over - use the calculated final score
-        endGame(finalScore);
+  const softDrop = useCallback(() => {
+    if (!canAct()) return;
+    dropStep(true);
+  }, [canAct, dropStep]);
+
+  const hardDrop = useCallback(() => {
+    if (!canAct()) return;
+    const s = stateRef.current;
+    const current = s.current!;
+    const landingY = findDropPosition(current, s.blocks);
+    const distance = landingY - current.y;
+    if (distance > 0) s.score += distance * 2;
+    s.current = { ...current, y: landingY };
+    lockPiece();
+    sync();
+  }, [canAct, lockPiece, sync]);
+
+  const hold = useCallback(() => {
+    if (!canAct()) return;
+    const s = stateRef.current;
+    if (!s.canHold) return;
+
+    const currentType = s.current!.type;
+
+    if (s.hold) {
+      const swapIn = spawnPiece(s.hold.type);
+      if (isOccupied(swapIn.type, swapIn.x, swapIn.y, swapIn.dir, s.blocks)) return;
+      s.hold = spawnPiece(currentType);
+      s.current = swapIn;
+    } else {
+      s.hold = spawnPiece(currentType);
+      const nextPiece = s.next;
+      const { piece, newBag } = getRandomPiece(s.bag);
+      s.bag = newBag;
+      s.next = piece;
+      if (!nextPiece || isOccupied(nextPiece.type, nextPiece.x, nextPiece.y, nextPiece.dir, s.blocks)) {
+        handleGameOver();
+        return;
+      }
+      s.current = nextPiece;
+    }
+
+    s.canHold = false;
+    dtRef.current = 0;
+    sync();
+  }, [canAct, handleGameOver, sync]);
+
+  // ---- Game control --------------------------------------------------------
+
+  const startGame = useCallback(() => {
+    const s = stateRef.current;
+    const first = getRandomPiece(createPieceBag());
+    const second = getRandomPiece(first.newBag);
+
+    s.blocks = createEmptyBoard();
+    s.bag = second.newBag;
+    s.current = first.piece;
+    s.next = second.piece;
+    s.hold = null;
+    s.canHold = true;
+    s.score = 0;
+    s.rows = 0;
+    s.level = 1;
+    s.playing = true;
+    s.paused = false;
+    s.gameOver = false;
+    newBestRef.current = false;
+
+    dtRef.current = 0;
+    startLoop();
+    restartMusic();
+    track('game_started');
+    sync();
+  }, [startLoop, restartMusic, track, sync]);
+
+  const endGame = useCallback(() => {
+    const s = stateRef.current;
+    if (!s.playing) return;
+    s.playing = false;
+    s.paused = false;
+    s.gameOver = false;
+    s.current = null;
+    stopLoop();
+    pauseMusic();
+    persistBestScore();
+    sync();
+  }, [stopLoop, pauseMusic, persistBestScore, sync]);
+
+  const togglePause = useCallback(() => {
+    const s = stateRef.current;
+    if (!s.playing || s.gameOver) return;
+    s.paused = !s.paused;
+    if (s.paused) {
+      pauseMusic();
+    } else {
+      lastTimeRef.current = 0;
+      playMusic();
+    }
+    sync();
+  }, [pauseMusic, playMusic, sync]);
+
+  // ---- Config setters ------------------------------------------------------
+
+  const setControlScheme = useCallback((scheme: ControlScheme) => {
+    controlSchemeRef.current = scheme;
+    try {
+      window.localStorage.setItem(CONTROL_SCHEME_KEY, scheme);
+    } catch {
+      /* ignore */
+    }
+    sync();
+  }, [sync]);
+
+  const setMusicTrack = useCallback((newTrack: MusicTrack) => {
+    musicTrackRef.current = newTrack;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.src = MUSIC_SRC[newTrack];
+      audio.load();
+      const s = stateRef.current;
+      if (s.playing && !s.paused) restartMusic();
+    }
+    try {
+      window.localStorage.setItem(MUSIC_TRACK_KEY, newTrack);
+    } catch {
+      /* ignore */
+    }
+    sync();
+  }, [restartMusic, sync]);
+
+  const toggleMute = useCallback(() => {
+    const nextMuted = !mutedRef.current;
+    mutedRef.current = nextMuted;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.muted = nextMuted;
+      const s = stateRef.current;
+      if (!nextMuted && s.playing && !s.paused) playMusic();
+    }
+    try {
+      window.localStorage.setItem(MUTED_KEY, String(nextMuted));
+    } catch {
+      /* ignore */
+    }
+    sync();
+  }, [playMusic, sync]);
+
+  // ---- Effects -------------------------------------------------------------
+
+  // Load persisted preferences and best score on mount.
+  useEffect(() => {
+    try {
+      const best = window.localStorage.getItem(BEST_SCORE_KEY);
+      if (best !== null) {
+        const parsed = parseInt(best, 10);
+        if (!Number.isNaN(parsed)) stateRef.current.bestScore = parsed;
+      }
+      const scheme = window.localStorage.getItem(CONTROL_SCHEME_KEY);
+      if (scheme === 'arrows' || scheme === 'wasd') controlSchemeRef.current = scheme;
+      const savedTrack = window.localStorage.getItem(MUSIC_TRACK_KEY);
+      if (savedTrack === 'normal' || savedTrack === 'halloween' || savedTrack === 'christmas') {
+        musicTrackRef.current = savedTrack;
+      }
+      const savedMuted = window.localStorage.getItem(MUTED_KEY);
+      if (savedMuted !== null) mutedRef.current = savedMuted === 'true';
+    } catch {
+      /* ignore */
+    }
+    sync();
+  }, [sync]);
+
+  // Set up the audio element once on mount.
+  useEffect(() => {
+    const audio = new Audio(MUSIC_SRC[musicTrackRef.current]);
+    audio.loop = true;
+    audio.muted = mutedRef.current;
+    audioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audio.src = '';
+      audio.load();
+      audioRef.current = null;
+    };
+  }, []);
+
+  // Keyboard controls.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const s = stateRef.current;
+      const key = e.key;
+      const lower = key.length === 1 ? key.toLowerCase() : key;
+      const scheme = controlSchemeRef.current;
+
+      // Start / restart from the menu or game-over screen.
+      if (!s.playing) {
+        if (key === 'Enter' || key === ' ') {
+          startGame();
+          e.preventDefault();
+        } else if (key.startsWith('Arrow')) {
+          // Swallow arrows so the page doesn't scroll behind the overlay.
+          e.preventDefault();
+        }
         return;
       }
 
-      setCurrent(nextPiece);
-      setNext(newNextPiece);
-      actionsRef.current = [];
-    }
-  }, [current, next, blocks, getNextPiece, endGame]);
+      let handled = true;
 
-  // Handle action
-  const handleAction = useCallback((action: number | undefined) => {
-    if (action === undefined) return;
-
-    switch (action) {
-      case DIR.LEFT:
-        move(DIR.LEFT);
-        break;
-      case DIR.RIGHT:
-        move(DIR.RIGHT);
-        break;
-      case DIR.UP:
-        rotate();
-        break;
-      case DIR.DOWN:
-        drop();
-        break;
-    }
-  }, [move, rotate, drop]);
-
-  // Game loop
-  useEffect(() => {
-    if (!playing) return;
-
-    const step = calculateStep(rows);
-    let isPlaying = true;
-
-    const gameLoop = (timestamp: number) => {
-      if (!isPlaying) return;
-      
-      if (!lastTimeRef.current) {
-        lastTimeRef.current = timestamp;
+      switch (key) {
+        case 'ArrowLeft':
+          moveLeft();
+          break;
+        case 'ArrowRight':
+          moveRight();
+          break;
+        case 'ArrowUp':
+          if (!e.repeat) rotate();
+          break;
+        case 'ArrowDown':
+          softDrop();
+          break;
+        case ' ':
+          if (!e.repeat) hardDrop();
+          break;
+        case 'Escape':
+          endGame();
+          break;
+        default:
+          handled = false;
       }
 
-      const deltaTime = Math.min(1, (timestamp - lastTimeRef.current) / 1000);
-      lastTimeRef.current = timestamp;
-
-      // Handle queued actions
-      const action = actionsRef.current.shift();
-      handleAction(action);
-
-      // Automatic drop
-      dtRef.current += deltaTime;
-      if (dtRef.current > step) {
-        dtRef.current -= step;
-        drop();
+      if (!handled && lower === 'p') {
+        if (!e.repeat) togglePause();
+        handled = true;
       }
 
-      if (isPlaying) {
-        animationFrameRef.current = requestAnimationFrame(gameLoop);
+      if (!handled && (lower === 'c' || key === 'Shift')) {
+        if (!e.repeat) hold();
+        handled = true;
       }
-    };
 
-    animationFrameRef.current = requestAnimationFrame(gameLoop);
-
-    return () => {
-      isPlaying = false;
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [playing, rows, handleAction, drop]);
-
-  // Keyboard controls
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (playing) {
-        let handled = false;
-
-        // Arrow keys (always work)
-        switch (e.key) {
-          case 'ArrowLeft':
-            actionsRef.current.push(DIR.LEFT);
+      if (!handled && scheme === 'wasd') {
+        switch (lower) {
+          case 'a':
+            moveLeft();
             handled = true;
             break;
-          case 'ArrowRight':
-            actionsRef.current.push(DIR.RIGHT);
+          case 'd':
+            moveRight();
             handled = true;
             break;
-          case 'ArrowUp':
-            actionsRef.current.push(DIR.UP);
+          case 'w':
+            if (!e.repeat) rotate();
             handled = true;
             break;
-          case 'ArrowDown':
-          case ' ':
-            actionsRef.current.push(DIR.DOWN);
-            handled = true;
-            break;
-          case 'Escape':
-            setPlaying(false);
-            if (audioRef.current) {
-              audioRef.current.pause();
-            }
+          case 's':
+            softDrop();
             handled = true;
             break;
         }
-
-        // WASD controls (if enabled)
-        if (controlScheme === 'wasd') {
-          switch (e.key.toLowerCase()) {
-            case 'a':
-              actionsRef.current.push(DIR.LEFT);
-              handled = true;
-              break;
-            case 'd':
-              actionsRef.current.push(DIR.RIGHT);
-              handled = true;
-              break;
-            case 'w':
-              actionsRef.current.push(DIR.UP);
-              handled = true;
-              break;
-            case 's':
-              actionsRef.current.push(DIR.DOWN);
-              handled = true;
-              break;
-          }
-        }
-
-        if (handled) {
-          e.preventDefault();
-        }
-      } else if (e.key === 'Enter') {
-        resetGame();
-        setPlaying(true);
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(() => {});
-        }
-        e.preventDefault();
       }
+
+      if (handled) e.preventDefault();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [playing, resetGame, controlScheme]);
+  }, [startGame, endGame, togglePause, moveLeft, moveRight, rotate, softDrop, hardDrop, hold]);
 
-  // Initialize audio
-  useEffect(() => {
-    const audio = new Audio('/Audio/tetris-normal.mp3');
-    audio.loop = true;
-    audioRef.current = audio;
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current.load();
-        audioRef.current = null;
-      }
-    };
-  }, []);
-
-  const startGame = useCallback(() => {
-    resetGame();
-    setPlaying(true);
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
-    // Track game start
-    if (typeof window !== 'undefined' && (window as any).umami) {
-      (window as any).umami.track('game_started');
-    }
-  }, [resetGame]);
+  // Stop the loop if the component unmounts mid-game.
+  useEffect(() => stopLoop, [stopLoop]);
 
   return {
-    playing,
-    score,
-    rows,
-    blocks,
-    current,
-    next,
-    controlScheme,
+    ...snapshot,
     setControlScheme,
+    setMusicTrack,
+    toggleMute,
     startGame,
     endGame,
+    togglePause,
+    actions: { moveLeft, moveRight, rotate, softDrop, hardDrop, hold },
   };
 }

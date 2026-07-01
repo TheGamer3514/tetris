@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Fuzzy_Bubbles } from 'next/font/google';
 import './globals.css';
 
@@ -8,9 +8,17 @@ const fuzzyBubbles = Fuzzy_Bubbles({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  themeColor: '#1c1c1c',
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
+  metadataBase: new URL('https://tetris.sillydev.co.uk'),
   title: 'Silly Tetris - Free Online Tetris Game | Play Now in Your Browser',
-  description: 'Play Silly Tetris for free! Classic block-stacking puzzle game with modern controls. No download required - play instantly in your browser with arrow keys or WASD.',
+  description: 'Play Silly Tetris for free! Classic block-stacking puzzle game with modern controls, hold piece, hard drop and more. No download required - play instantly in your browser with arrow keys, WASD or touch.',
+  manifest: '/site.webmanifest',
   keywords: [
     'tetris',
     'tetris game',
@@ -67,9 +75,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  verification: {
-    google: 'google-site-verification-token', // Add your token if needed
   },
 };
 

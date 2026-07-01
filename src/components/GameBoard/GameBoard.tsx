@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Piece, TetrominoType, BOARD_WIDTH, BOARD_HEIGHT } from '@/types/tetris';
 import { eachBlock, getBlock, findDropPosition } from '@/utils/gameLogic';
 import styles from './GameBoard.module.css';
@@ -36,23 +36,21 @@ function drawBlock(
 
 export function GameBoard({ blocks, current, playing }: GameBoardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [, setResizeCounter] = useState(0);
 
-  useEffect(() => {
+  const drawBoard = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set actual canvas size to match display size
+    // Match the backing store to the CSS display size (this also clears it).
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
 
     const dx = canvas.width / BOARD_WIDTH;
     const dy = canvas.height / BOARD_HEIGHT;
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.lineWidth = 1;
@@ -94,20 +92,18 @@ export function GameBoard({ blocks, current, playing }: GameBoardProps) {
     ctx.restore();
   }, [blocks, current, playing]);
 
-  // Handle resize
+  // Redraw whenever the game state changes.
   useEffect(() => {
-    const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
-      // Trigger re-render
-      setResizeCounter(prev => prev + 1);
-    };
+    drawBoard();
+  }, [drawBoard]);
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  // Repaint after a resize (setting canvas width/height clears the canvas, so
+  // an explicit redraw is required — otherwise the board goes blank on the
+  // idle / paused / game-over screens where no state change follows).
+  useEffect(() => {
+    window.addEventListener('resize', drawBoard);
+    return () => window.removeEventListener('resize', drawBoard);
+  }, [drawBoard]);
 
   return (
     <canvas

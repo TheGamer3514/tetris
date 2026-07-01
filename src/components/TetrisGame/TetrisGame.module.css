@@ -1,35 +1,14 @@
+.page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1em;
+}
+
 .header {
   text-align: center;
-  margin-bottom: 1.5em;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.mobileWarning {
-  display: none;
-  background-color: rgba(255, 204, 0, 0.15);
-  border: 2px solid var(--color-accent);
-  border-radius: 8px;
-  padding: 1em;
-  margin: 1em auto;
-  max-width: 500px;
-  text-align: center;
-  color: var(--color-accent);
-  font-size: 0.9em;
-  animation: fadeIn 0.4s ease;
-}
-
-@media screen and (max-width: 768px) {
-  .mobileWarning {
-    display: block;
-  }
-  
-  .tetris {
-    display: none !important;
-  }
+  margin-bottom: 1em;
 }
 
 .title {
@@ -48,15 +27,16 @@
 }
 
 .tetris {
-  margin: 1em auto;
+  margin: 0 auto;
   padding: 1em;
   border: 4px solid var(--color-bg-secondary);
   border-radius: var(--radius-lg);
   background-color: var(--color-bg-secondary);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 1em;
+  max-width: 100%;
 }
 
 .leftPanel,
@@ -65,17 +45,19 @@
   flex-direction: column;
   justify-content: flex-start;
   color: var(--color-text-primary);
-  padding: 0.5em;
-  gap: 1em;
+  gap: 0.9em;
+  width: 170px;
+  flex-shrink: 0;
 }
 
-.menu p {
-  margin: 0.5em 0;
-  text-align: center;
+.boardWrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
 }
 
-.nextPieceContainer {
-  margin: 1em 0;
+.previewBox {
   text-align: center;
   background-color: var(--color-bg-primary);
   border: 2px solid var(--color-border);
@@ -84,9 +66,9 @@
 }
 
 .label {
-  font-size: 0.8em;
+  font-size: 0.75em;
   opacity: var(--opacity-muted);
-  margin-bottom: 0.5em !important;
+  margin-bottom: 0.5em;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -104,53 +86,41 @@
 }
 
 .controlsSection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4em;
   margin-top: 0.5em;
 }
 
-.controlItem {
-  background-color: var(--color-bg-primary);
-  padding: 0.4em 0.5em;
-  border-radius: var(--radius-sm);
-  border: 2px solid var(--color-border);
+.controlList {
+  list-style: none;
   display: flex;
   flex-direction: column;
+  gap: 0.35em;
+  font-size: 0.8em;
+}
+
+.controlList li {
+  display: flex;
   align-items: center;
-  gap: 0.25em;
-  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  gap: 0.5em;
+  opacity: var(--opacity-muted);
 }
 
-.controlItem:hover {
-  transform: translateY(-1px);
-  border-color: var(--color-border-light);
-}
-
-.keyButton {
+.key {
+  display: inline-block;
+  min-width: 3.2em;
+  text-align: center;
   background-color: var(--color-bg-elevated);
   color: var(--color-accent);
-  padding: 0.25em 0.5em;
-  border-radius: var(--radius-sm);
-  font-size: 0.7em;
-  font-weight: bold;
-  min-width: 45px;
-  text-align: center;
   border: 2px solid var(--color-border-light);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.keyLabel {
-  font-size: 0.6em;
-  opacity: var(--opacity-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  border-radius: var(--radius-sm);
+  padding: 0.15em 0.4em;
+  font-size: 0.9em;
+  font-weight: bold;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
 }
 
 .footer {
   text-align: center;
-  margin: 1.5em 0 2em;
-  padding: 0;
+  margin: 1.5em 0 1em;
 }
 
 .discordLink {
@@ -160,10 +130,10 @@
   text-decoration: none;
   color: var(--color-accent);
   background-color: rgba(51, 51, 51, 0.8);
-  padding: 1em 2em;
+  padding: 0.8em 1.6em;
   border-radius: var(--radius-xl);
   border: 2px solid var(--color-accent);
-  font-size: 1.1em;
+  font-size: 1em;
   font-weight: 500;
   transition: all var(--transition-normal);
 }
@@ -175,97 +145,49 @@
   box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
 }
 
-@media screen and (max-width: 600px) {
-  .controlsGrid {
-    grid-template-columns: 1fr;
+/* ---- Tablet / mobile ---------------------------------------------------- */
+@media screen and (max-width: 768px) {
+  .title {
+    font-size: 2.2em;
+  }
+
+  .subtitle {
+    font-size: 0.95em;
+  }
+
+  .tetris {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8em;
+    padding: 0.8em;
+  }
+
+  .leftPanel {
+    flex-direction: row;
+    width: 100%;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.6em;
+    flex-wrap: wrap;
+  }
+
+  .previewBox {
+    flex: 1;
+    min-width: 70px;
+    max-width: 110px;
+  }
+
+  .rightPanel {
+    flex-direction: row;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: center;
     gap: 1em;
+    flex-wrap: wrap;
   }
-  
-  .controlsInfo {
-    padding: 1em;
-  }
-}
 
-@media screen and (min-width: 0px) and (min-height: 0px) {
-  .tetris {
-    font-size: 0.75em;
-    width: auto;
-    max-width: 90vw;
-  }
-  .leftPanel,
-  .rightPanel {
-    width: 100px;
-    min-height: 200px;
-  }
-}
-
-@media screen and (min-width: 400px) and (min-height: 400px) {
-  .tetris {
-    font-size: 1.00em;
-    width: auto;
-  }
-  .leftPanel,
-  .rightPanel {
-    width: 150px;
-    min-height: 300px;
-  }
-}
-
-@media screen and (min-width: 500px) and (min-height: 500px) {
-  .tetris {
-    font-size: 1.25em;
-    width: auto;
-  }
-  .leftPanel,
-  .rightPanel {
-    width: 180px;
-    min-height: 400px;
-  }
-}
-
-@media screen and (min-width: 600px) and (min-height: 600px) {
-  .tetris {
-    font-size: 1.50em;
-    width: auto;
-  }
-  .leftPanel,
-  .rightPanel {
-    width: 200px;
-    min-height: 500px;
-  }
-}
-
-@media screen and (min-width: 700px) and (min-height: 700px) {
-  .tetris {
-    font-size: 1.75em;
-    width: auto;
-  }
-  .leftPanel,
-  .rightPanel {
-    width: 220px;
-    min-height: 600px;
-  }
-}
-@media screen and (min-width: 800px) and (min-height: 800px) {
-  .tetris {
-    font-size: 2.00em;
-    width: auto;
-  }
-  .leftPanel,
-  .rightPanel {
-    width: 240px;
-    min-height: 700px;
-  }
-}
-
-@media screen and (min-width: 900px) and (min-height: 900px) {
-  .tetris {
-    font-size: 2.25em;
-    width: auto;
-  }
-  .leftPanel,
-  .rightPanel {
-    width: 260px;
-    min-height: 800px;
+  /* The on-screen touch pad replaces the keyboard legend on mobile. */
+  .controlsSection {
+    display: none;
   }
 }

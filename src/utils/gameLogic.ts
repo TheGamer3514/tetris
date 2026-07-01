@@ -5,6 +5,7 @@ import {
   TETROMINOES,
   BOARD_WIDTH,
   BOARD_HEIGHT,
+  LINES_PER_LEVEL,
 } from '@/types/tetris';
 
 /**
@@ -100,56 +101,43 @@ export function setBlock(
 }
 
 /**
- * Generate a random number between min and max
- */
-function random(min: number, max: number): number {
-  return min + Math.random() * (max - min);
-}
-
-/**
- * Create a shuffled bag of pieces (28-bag randomizer: 4 of each piece type)
+ * Create a shuffled 7-bag: each of the seven tetrominoes exactly once,
+ * in random order. This guarantees no piece is ever more than 12 pieces
+ * apart from its previous occurrence.
  */
 export function createPieceBag(): TetrominoType[] {
-  const pieces: TetrominoType[] = [];
-  const types = Object.values(TETROMINOES);
-  
-  // Add 4 of each piece type (28 pieces total)
-  types.forEach((type) => {
-    for (let i = 0; i < 4; i++) {
-      pieces.push(type);
-    }
-  });
-  
-  // Shuffle
+  const pieces = Object.values(TETROMINOES);
+
+  // Fisher-Yates shuffle
   for (let i = pieces.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pieces[i], pieces[j]] = [pieces[j], pieces[i]];
   }
-  
+
   return pieces;
 }
 
 /**
- * Get a random piece from the bag, refilling if empty
+ * Create a piece in its default spawn state, centered horizontally on the board
  */
-export function getRandomPiece(bag: TetrominoType[]): { piece: Piece; newBag: TetrominoType[] } {
-  let newBag = [...bag];
-  
-  if (newBag.length === 0) {
-    newBag = createPieceBag();
-  }
-  
-  const index = Math.floor(random(0, newBag.length));
-  const type = newBag.splice(index, 1)[0];
-  
-  const piece: Piece = {
+export function spawnPiece(type: TetrominoType): Piece {
+  return {
     type,
     dir: DIR.UP,
-    x: Math.round(random(0, BOARD_WIDTH - type.size)),
+    x: Math.floor((BOARD_WIDTH - type.size) / 2),
     y: 0,
   };
-  
-  return { piece, newBag };
+}
+
+/**
+ * Take the next piece from the bag, refilling with a fresh shuffled 7-bag
+ * when it runs out.
+ */
+export function getRandomPiece(bag: TetrominoType[]): { piece: Piece; newBag: TetrominoType[] } {
+  const newBag = bag.length === 0 ? createPieceBag() : [...bag];
+  const type = newBag.shift()!;
+
+  return { piece: spawnPiece(type), newBag };
 }
 
 /**
@@ -167,13 +155,30 @@ export function createEmptyBoard(): (TetrominoType | null)[][] {
 }
 
 /**
- * Calculate the step time based on rows cleared
+ * Calculate the current level from the number of rows cleared
  */
-export function calculateStep(rows: number): number {
+export function calculateLevel(rows: number): number {
+  return Math.floor(rows / LINES_PER_LEVEL) + 1;
+}
+
+/**
+ * Calculate the gravity step time (seconds per cell) based on the level.
+ * Higher levels drop pieces faster, down to a floor.
+ */
+export function calculateStep(level: number): number {
   const start = 0.6;
-  const decrement = 0.005;
-  const min = 0.1;
-  return Math.max(min, start - decrement * rows);
+  const decrement = 0.05;
+  const min = 0.08;
+  return Math.max(min, start - decrement * (level - 1));
+}
+
+/**
+ * Points awarded for clearing lines, scaled by the current level.
+ * Uses the classic single/double/triple/tetris progression.
+ */
+export function lineClearScore(lines: number, level: number): number {
+  const base = [0, 100, 300, 500, 800];
+  return (base[lines] ?? 0) * level;
 }
 
 /**

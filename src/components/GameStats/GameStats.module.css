@@ -1,8 +1,17 @@
 .stats {
   display: flex;
   flex-direction: column;
-  gap: 0.8em;
-  margin: 1em 0;
+  gap: 0.6em;
+  margin: 0.5em 0;
+}
+
+.statRow {
+  display: flex;
+  gap: 0.6em;
+}
+
+.statRow .statItem {
+  flex: 1;
 }
 
 .statItem {
@@ -32,4 +41,22 @@
   font-size: 1em;
   letter-spacing: 0.05em;
   word-break: break-all;
+}
+
+@media screen and (max-width: 768px) {
+  .stats {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 0.4em;
+    margin: 0;
+  }
+
+  .stats > .statItem {
+    flex: 1 1 45%;
+  }
+
+  .statRow {
+    flex: 1 1 100%;
+  }
 }

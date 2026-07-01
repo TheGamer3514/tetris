@@ -7,6 +7,8 @@ import styles from './NextPiece.module.css';
 
 interface NextPieceProps {
   piece: Piece | null;
+  /** Render at reduced opacity, e.g. when the hold slot is locked for this turn. */
+  dimmed?: boolean;
 }
 
 const PREVIEW_SIZE = 5;
@@ -31,7 +33,7 @@ function drawBlock(
   ctx.strokeRect(px, py, dx, dy);
 }
 
-export function NextPiece({ piece }: NextPieceProps) {
+export function NextPiece({ piece, dimmed = false }: NextPieceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -53,21 +55,25 @@ export function NextPiece({ piece }: NextPieceProps) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(0.5, 0.5);
+    ctx.globalAlpha = dimmed ? 0.35 : 1;
 
-    // Draw next piece
+    // Draw next piece, centered within the preview grid
     if (piece) {
-      const padding = (PREVIEW_SIZE - piece.type.size) / 2;
-      eachBlock(piece.type, padding, padding, piece.dir, (x, y) => {
+      const offsetX = (PREVIEW_SIZE - piece.type.size) / 2;
+      const offsetY = (PREVIEW_SIZE - piece.type.size) / 2;
+      eachBlock(piece.type, offsetX, offsetY, piece.dir, (x, y) => {
         drawBlock(ctx, x * dx, y * dy, dx, dy, piece.type.color);
       });
     }
+
+    ctx.globalAlpha = 1;
 
     // Draw border
     ctx.strokeStyle = 'black';
     ctx.strokeRect(0, 0, PREVIEW_SIZE * dx - 1, PREVIEW_SIZE * dy - 1);
 
     ctx.restore();
-  }, [piece]);
+  }, [piece, dimmed]);
 
   return <canvas ref={canvasRef} className={styles.upcoming} />;
 }
