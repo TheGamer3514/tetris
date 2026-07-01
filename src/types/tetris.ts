@@ -34,14 +34,26 @@ export const TETROMINOES: Record<string, TetrominoType> = {
   Z: { size: 3, blocks: [0x0C60, 0x4C80, 0xC600, 0x2640], color: 'red' },
 };
 
+export type ControlScheme = 'arrows' | 'wasd';
+
+export type MusicTrack = 'normal' | 'halloween' | 'christmas';
+
 export interface GameState {
   playing: boolean;
+  paused: boolean;
+  gameOver: boolean;
   score: number;
+  bestScore: number;
   rows: number;
+  level: number;
   blocks: (TetrominoType | null)[][];
   current: Piece | null;
   next: Piece | null;
+  hold: Piece | null;
+  canHold: boolean;
+  bag: TetrominoType[];
 }
 
 export const BOARD_WIDTH = 10;
 export const BOARD_HEIGHT = 20;
+export const LINES_PER_LEVEL = 10;

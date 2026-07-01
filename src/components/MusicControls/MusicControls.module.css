@@ -1,0 +1,51 @@
+.music {
+  text-align: center;
+}
+
+.label {
+  font-size: 0.8em;
+  opacity: var(--opacity-muted);
+  margin-bottom: 0.5em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.row {
+  display: flex;
+  gap: 0.4em;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.select {
+  flex: 1;
+  min-width: 0;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: 0.35em 0.5em;
+  font-family: inherit;
+  font-size: 0.75em;
+  cursor: pointer;
+}
+
+.muteButton {
+  background-color: var(--color-bg-elevated);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: 0.35em 0.55em;
+  font-size: 0.85em;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.muteButton:hover {
+  background-color: var(--color-border-light);
+  border-color: #666;
+}
+
+.muteButton:active {
+  transform: scale(0.95);
+}
