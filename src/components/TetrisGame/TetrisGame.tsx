@@ -106,7 +106,7 @@ export function TetrisGame() {
 
       <footer className={styles.footer}>
         <a
-          href="https://discord.gg/mUpVm596As"
+          href="https://discord.gg/Ec4csXrps8"
           target="_blank"
           rel="noopener noreferrer"
           className={styles.discordLink}
