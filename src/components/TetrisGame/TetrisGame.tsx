@@ -9,6 +9,8 @@ import {
   ControlToggle,
   MusicControls,
   TouchControls,
+  AdSlot,
+  SideRails,
 } from '@/components';
 import styles from './TetrisGame.module.css';
 
@@ -105,15 +107,10 @@ export function TetrisGame() {
       )}
 
       <footer className={styles.footer}>
-        <a
-          href="https://discord.gg/Ec4csXrps8"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.discordLink}
-        >
-          💬 Join our Discord server
-        </a>
+        <AdSlot />
       </footer>
+
+      <SideRails />
     </div>
   );
 }

@@ -118,31 +118,12 @@
   box-shadow: 0 2px 3px rgba(0, 0, 0, 0.3);
 }
 
+/* Extra top margin keeps the ad clear of the touch pad on mobile, so
+   frantic taps don't land on it (accidental clicks break AdSense policy). */
 .footer {
-  text-align: center;
-  margin: 1.5em 0 1em;
-}
-
-.discordLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5em;
-  text-decoration: none;
-  color: var(--color-accent);
-  background-color: rgba(51, 51, 51, 0.8);
-  padding: 0.8em 1.6em;
-  border-radius: var(--radius-xl);
-  border: 2px solid var(--color-accent);
-  font-size: 1em;
-  font-weight: 500;
-  transition: all var(--transition-normal);
-}
-
-.discordLink:hover {
-  background-color: var(--color-accent);
-  color: var(--color-bg-primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 204, 0, 0.3);
+  width: 100%;
+  max-width: 728px;
+  margin: 2.5em 0 1em;
 }
 
 /* ---- Tablet / mobile ---------------------------------------------------- */

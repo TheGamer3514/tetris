@@ -113,6 +113,11 @@ export default function RootLayout({
           data-website-id="d7584303-5428-40ba-b942-e38443429cf8"
         ></script>
         <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4814283255853981"
+          crossOrigin="anonymous"
+        ></script>
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />

@@ -5,4 +5,5 @@ export { GameOverlay } from './GameOverlay';
 export { ControlToggle } from './ControlToggle';
 export { MusicControls } from './MusicControls';
 export { TouchControls } from './TouchControls';
+export { AdSlot, SideRails } from './AdSlot';
 export { TetrisGame } from './TetrisGame';

@@ -1,0 +1,24 @@
+.wrap {
+  width: 100%;
+  overflow: hidden;
+}
+
+.ins {
+  display: block;
+}
+
+.rail {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 160px;
+  min-height: 600px;
+}
+
+.railLeft {
+  left: 16px;
+}
+
+.railRight {
+  right: 16px;
+}
